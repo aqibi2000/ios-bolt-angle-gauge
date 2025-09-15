@@ -79,7 +79,7 @@
   </style>
 </head>
 <body>
-  <div id="timestamp">Created: Monday, 15 September 2025, 22:40 BST</div>
+  <div id="timestamp">Created: Monday, 15 September 2025, 22:45 BST</div>
   <h1>🔧 iOS Bolt Angle Gauge</h1>
 
   <label for="targetAngle">Target angle (°):</label>
@@ -112,7 +112,6 @@
     }
 
     document.getElementById('startBtn').addEventListener('click', () => {
-      // Reset everything
       targetAngle = parseFloat(document.getElementById('targetAngle').value);
       currentAngle = 0;
       paused = false;
@@ -151,28 +150,29 @@
     }
 
     function handleMotion(event) {
-      const gamma = event.rotationRate?.gamma;
-      if (gamma === null || gamma === undefined) {
-        document.getElementById('status').textContent = "⚠️ No motion data available.";
-        return;
-      }
+      const alpha = event.rotationRate?.alpha || 0;
+      const beta = event.rotationRate?.beta || 0;
+      const gamma = event.rotationRate?.gamma || 0;
+      const deltaTime = event.interval || 0.02;
 
+      const netRotation = alpha + beta + gamma;
       const threshold = parseFloat(document.getElementById('ratchetThreshold').value) || 3;
       const ratchetEnabled = document.getElementById('ratchetToggle').checked;
 
       if (ratchetEnabled) {
-        if (gamma > 0) {
-          paused = true; // pause immediately on clockwise
+        if (netRotation > 0) {
+          paused = true;
         }
-        if (gamma < 0 && Math.abs(gamma) > threshold) {
-          paused = false; // resume only if anticlockwise exceeds threshold
+        if (netRotation < 0 && Math.abs(netRotation) > threshold) {
+          paused = false;
         }
         if (!paused) {
-          currentAngle += Math.abs(gamma) * 0.02;
+          currentAngle += Math.abs(netRotation) * deltaTime;
         }
       } else {
-        // Ratchet disabled: anticlockwise adds, clockwise subtracts
-        currentAngle += gamma < 0 ? Math.abs(gamma) * 0.02 : -Math.abs(gamma) * 0.02;
+        currentAngle += netRotation < 0
+          ? Math.abs(netRotation) * deltaTime
+          : -Math.abs(netRotation) * deltaTime;
         paused = false;
       }
 
