@@ -12,9 +12,14 @@
       background: #f4f4f4;
       position: relative;
     }
+    label {
+      display: block;
+      margin-top: 1em;
+      font-weight: bold;
+    }
     input, button {
       font-size: 1.2em;
-      margin: 1em;
+      margin: 0.5em;
       padding: 0.5em;
     }
     button {
@@ -74,12 +79,21 @@
   </style>
 </head>
 <body>
-  <div id="timestamp">Created: Monday, 15 September 2025, 21:27 BST</div>
+  <div id="timestamp">Created: Monday, 15 September 2025, 21:32 BST</div>
   <h1>🔧 iOS Bolt Angle Gauge</h1>
-  <input type="number" id="targetAngle" placeholder="Enter required angle (°)" />
-  <input type="number" id="ratchetThreshold" placeholder="Ratchet threshold (°)" value="3" />
+
+  <label for="targetAngle">Target angle (°):</label>
+  <input type="number" id="targetAngle" placeholder="Enter required angle" />
+
+  <label for="ratchetThreshold">Ratchet swing threshold (°):</label>
+  <input type="number" id="ratchetThreshold" value="3" />
+
+  <label for="ratchetToggle">Enable ratchet mode:</label>
+  <input type="checkbox" id="ratchetToggle" checked />
+
   <button id="startBtn">Start</button>
   <p id="status">Waiting to start...</p>
+
   <div id="gauge">
     <div id="needle"></div>
   </div>
@@ -141,6 +155,7 @@
       if (gamma === null) return;
 
       const threshold = parseFloat(document.getElementById('ratchetThreshold').value) || 3;
+      const ratchetEnabled = document.getElementById('ratchetToggle').checked;
 
       const isForward = gamma < 0;
       const isReverse = gamma > 0;
@@ -149,13 +164,15 @@
         currentAngle += Math.abs(gamma) * 0.02;
       }
 
-      if (isReverse && Math.abs(gamma) > threshold) {
-        paused = true;
-        pausedAngle = currentAngle;
-      }
+      if (ratchetEnabled) {
+        if (isReverse && Math.abs(gamma) > threshold) {
+          paused = true;
+          pausedAngle = currentAngle;
+        }
 
-      if (isForward && paused) {
-        paused = false;
+        if (isForward && paused) {
+          paused = false;
+        }
       }
 
       if (!paused) {
