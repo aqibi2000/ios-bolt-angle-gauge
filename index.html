@@ -10,6 +10,7 @@
       text-align: center;
       padding: 2em;
       background: #f4f4f4;
+      position: relative;
     }
     input, button {
       font-size: 1.2em;
@@ -45,16 +46,15 @@
       transform: rotate(0deg);
     }
     #timestamp {
-      position: absolute;
-      top: 10px;
-      right: 10px;
       font-size: 0.9em;
       color: #555;
+      text-align: right;
+      margin-bottom: -1em;
     }
   </style>
 </head>
 <body>
-  <div id="timestamp">Created: Monday, 15 September 2025, 21:12 BST</div>
+  <div id="timestamp">Created: Monday, 15 September 2025, 21:15 BST</div>
   <h1>🔧 iOS Bolt Angle Gauge</h1>
   <input type="number" id="targetAngle" placeholder="Enter required angle (°)" />
   <input type="number" id="ratchetThreshold" placeholder="Ratchet threshold (°)" value="3" />
