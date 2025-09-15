@@ -3,88 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>iOS Bolt Angle Gauge</title>
+  <title>Accurate Bolt Angle Gauge</title>
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 2em;
-      background: #f4f4f4;
-    }
-    label {
-      display: block;
-      margin-top: 1em;
-      font-weight: bold;
-    }
-    input, button {
-      font-size: 1.2em;
-      margin: 0.5em;
-      padding: 0.5em;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 5px;
-    }
-    #status {
-      font-size: 1.2em;
-      margin-top: 1em;
-      white-space: pre-line;
-    }
-    #gauge {
-      margin: 2em auto;
-      width: 200px;
-      height: 200px;
-      border: 10px solid #ccc;
-      border-radius: 50%;
-      position: relative;
-      background: #fff;
-    }
-    #needle {
-      width: 4px;
-      height: 90px;
-      background: red;
-      position: absolute;
-      top: 10px;
-      left: 98px;
-      transform-origin: bottom center;
-      transform: rotate(0deg);
-    }
-    .mark {
-      position: absolute;
-      width: 2px;
-      height: 10px;
-      background: black;
-      top: 50%;
-      left: 50%;
-      transform-origin: center center;
-    }
-    .target-mark {
-      position: absolute;
-      width: 4px;
-      height: 14px;
-      background: green;
-      top: 50%;
-      left: 50%;
-      transform-origin: center center;
-    }
-    #timestamp {
-      font-size: 0.9em;
-      color: #555;
-      text-align: right;
-      margin-bottom: -1em;
-    }
+    body { font-family: sans-serif; text-align: center; padding: 2em; background: #f4f4f4; }
+    label { display: block; margin-top: 1em; font-weight: bold; }
+    input, button { font-size: 1.2em; margin: 0.5em; padding: 0.5em; }
+    button { background-color: #007bff; color: white; border: none; border-radius: 5px; }
+    #status { font-size: 1.2em; margin-top: 1em; white-space: pre-line; }
+    #gauge { margin: 2em auto; width: 200px; height: 200px; border: 10px solid #ccc; border-radius: 50%; position: relative; background: #fff; }
+    #needle { width: 4px; height: 90px; background: red; position: absolute; top: 10px; left: 98px; transform-origin: bottom center; transform: rotate(0deg); }
+    .mark { position: absolute; width: 2px; height: 10px; background: black; top: 50%; left: 50%; transform-origin: center center; }
+    .target-mark { position: absolute; width: 4px; height: 14px; background: green; top: 50%; left: 50%; transform-origin: center center; }
+    #timestamp { font-size: 0.9em; color: #555; text-align: right; margin-bottom: -1em; }
   </style>
 </head>
 <body>
-  <div id="timestamp">Created: Monday, 15 September 2025, 22:55 BST</div>
-  <h1>🔧 iOS Bolt Angle Gauge</h1>
+  <div id="timestamp">Created: Monday, 15 September 2025, 22:58 BST</div>
+  <h1>🔧 Accurate Bolt Angle Gauge</h1>
 
   <label for="targetAngle">Target angle (°):</label>
   <input type="number" id="targetAngle" placeholder="Enter required angle" />
 
-  <label for="ratchetThreshold">Ratchet swing threshold (°):</label>
+  <label for="ratchetThreshold">Ratchet swing threshold (°/s):</label>
   <input type="number" id="ratchetThreshold" value="3" />
 
   <label for="ratchetToggle">Enable ratchet mode:</label>
@@ -102,7 +42,6 @@
     let currentAngle = 0;
     let paused = false;
     let targetMark = null;
-    let orientation = { alpha: 0, beta: 0, gamma: 0 };
 
     for (let i = 0; i < 360; i += 30) {
       const mark = document.createElement('div');
@@ -110,12 +49,6 @@
       mark.style.transform = `rotate(${i}deg) translateY(-90px)`;
       document.getElementById('gauge').appendChild(mark);
     }
-
-    window.addEventListener('deviceorientation', (e) => {
-      orientation.alpha = e.alpha || 0;
-      orientation.beta = e.beta || 0;
-      orientation.gamma = e.gamma || 0;
-    });
 
     document.getElementById('startBtn').addEventListener('click', () => {
       targetAngle = parseFloat(document.getElementById('targetAngle').value);
@@ -156,35 +89,23 @@
     }
 
     function handleMotion(event) {
-      const { alpha: rAlpha = 0, beta: rBeta = 0, gamma: rGamma = 0 } = event.rotationRate || {};
+      const alpha = event.rotationRate?.alpha || 0;
       const dt = event.interval || 0.02;
-
-      // Orientation compensation (simplified projection onto Z-axis)
-      const pitch = orientation.beta * Math.PI / 180;
-      const roll = orientation.gamma * Math.PI / 180;
-
-      // Project rotationRate into world Z-axis
-      const compensatedZ = rAlpha * Math.cos(pitch) * Math.cos(roll)
-                         + rBeta * Math.sin(roll)
-                         - rGamma * Math.sin(pitch);
-
       const threshold = parseFloat(document.getElementById('ratchetThreshold').value) || 3;
       const ratchetEnabled = document.getElementById('ratchetToggle').checked;
 
       if (ratchetEnabled) {
-        if (compensatedZ > 0) {
+        if (alpha > 0) {
           paused = true;
         }
-        if (compensatedZ < 0 && Math.abs(compensatedZ) > threshold) {
+        if (alpha < 0 && Math.abs(alpha) > threshold) {
           paused = false;
         }
         if (!paused) {
-          currentAngle += Math.abs(compensatedZ) * dt;
+          currentAngle += Math.abs(alpha) * dt;
         }
       } else {
-        currentAngle += compensatedZ < 0
-          ? Math.abs(compensatedZ) * dt
-          : -Math.abs(compensatedZ) * dt;
+        currentAngle += alpha < 0 ? Math.abs(alpha) * dt : -Math.abs(alpha) * dt;
         paused = false;
       }
 
