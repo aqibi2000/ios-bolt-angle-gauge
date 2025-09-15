@@ -79,7 +79,7 @@
   </style>
 </head>
 <body>
-  <div id="timestamp">Created: Monday, 15 September 2025, 21:37 BST</div>
+  <div id="timestamp">Created: Monday, 15 September 2025, 21:40 BST</div>
   <h1>🔧 iOS Bolt Angle Gauge</h1>
 
   <label for="targetAngle">Target angle (°):</label>
@@ -105,7 +105,6 @@
     let paused = false;
     let targetMark = null;
 
-    // Add gauge markings every 30°
     for (let i = 0; i < 360; i += 30) {
       const mark = document.createElement('div');
       mark.className = 'mark';
@@ -156,11 +155,10 @@
       const isForward = gamma < 0;
       const isReverse = gamma > 0;
 
-      if (isForward) {
-        currentAngle += Math.abs(gamma) * 0.02;
-      }
-
       if (ratchetEnabled) {
+        if (isForward && !paused) {
+          currentAngle += Math.abs(gamma) * 0.02;
+        }
         if (isReverse && Math.abs(gamma) > threshold) {
           paused = true;
         }
@@ -168,6 +166,8 @@
           paused = false;
         }
       } else {
+        // No ratchet: always track both directions
+        currentAngle += gamma * 0.02;
         paused = false;
       }
 
