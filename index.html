@@ -79,7 +79,7 @@
   </style>
 </head>
 <body>
-  <div id="timestamp">Created: Monday, 15 September 2025, 21:40 BST</div>
+  <div id="timestamp">Created: Monday, 15 September 2025, 21:43 BST</div>
   <h1>🔧 iOS Bolt Angle Gauge</h1>
 
   <label for="targetAngle">Target angle (°):</label>
@@ -166,8 +166,8 @@
           paused = false;
         }
       } else {
-        // No ratchet: always track both directions
-        currentAngle += gamma * 0.02;
+        // Flip notation: clockwise adds, anticlockwise subtracts
+        currentAngle += gamma > 0 ? Math.abs(gamma) * 0.02 : -Math.abs(gamma) * 0.02;
         paused = false;
       }
 
