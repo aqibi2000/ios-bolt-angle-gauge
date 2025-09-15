@@ -1,66 +1,142 @@
-<script>
-  let targetAngle = 0;
-  let currentAngle = 0;
-  let lastRawAngle = null;
-  let ratchetBase = 0;
-  let ratchetThreshold = 3;
-
-  document.getElementById('startBtn').addEventListener('click', () => {
-    targetAngle = parseFloat(document.getElementById('targetAngle').value);
-    currentAngle = 0;
-    lastRawAngle = null;
-    ratchetBase = 0;
-    document.getElementById('status').textContent = "Tracking started...";
-    requestSensorAccess();
-  });
-
-  function requestSensorAccess() {
-    if (typeof DeviceMotionEvent.requestPermission === 'function') {
-      DeviceMotionEvent.requestPermission().then(response => {
-        if (response === 'granted') {
-          window.addEventListener('devicemotion', handleMotion);
-        } else {
-          alert("Permission denied for motion sensors.");
-        }
-      }).catch(() => {
-        alert("Sensor access failed.");
-      });
-    } else {
-      window.addEventListener('devicemotion', handleMotion);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iOS Bolt Angle Gauge</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 2em;
+      background: #f4f4f4;
     }
-  }
+    input, button {
+      font-size: 1.2em;
+      margin: 1em;
+      padding: 0.5em;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    #status {
+      font-size: 1.2em;
+      margin-top: 1em;
+    }
+    #gauge {
+      margin: 2em auto;
+      width: 200px;
+      height: 200px;
+      border: 10px solid #ccc;
+      border-radius: 50%;
+      position: relative;
+    }
+    #needle {
+      width: 4px;
+      height: 90px;
+      background: red;
+      position: absolute;
+      top: 10px;
+      left: 98px;
+      transform-origin: bottom center;
+      transform: rotate(0deg);
+    }
+    #timestamp {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 0.9em;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div id="timestamp">Created: Monday, 15 September 2025, 21:12 BST</div>
+  <h1>🔧 iOS Bolt Angle Gauge</h1>
+  <input type="number" id="targetAngle" placeholder="Enter required angle (°)" />
+  <input type="number" id="ratchetThreshold" placeholder="Ratchet threshold (°)" value="3" />
+  <button id="toggleDirection">Direction: Clockwise</button>
+  <button id="startBtn">Start</button>
+  <p id="status">Waiting to start...</p>
+  <div id="gauge">
+    <div id="needle"></div>
+  </div>
 
-  function handleMotion(event) {
-    const gamma = event.rotationRate.gamma;
-    if (gamma === null) return;
+  <script>
+    let targetAngle = 0;
+    let currentAngle = 0;
+    let lastRawAngle = null;
+    let ratchetBase = 0;
+    let direction = 'clockwise';
 
-    if (lastRawAngle === null) {
+    document.getElementById('toggleDirection').addEventListener('click', () => {
+      direction = direction === 'clockwise' ? 'anticlockwise' : 'clockwise';
+      document.getElementById('toggleDirection').textContent = `Direction: ${direction.charAt(0).toUpperCase() + direction.slice(1)}`;
+    });
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      targetAngle = parseFloat(document.getElementById('targetAngle').value);
+      currentAngle = 0;
+      lastRawAngle = null;
+      ratchetBase = 0;
+      document.getElementById('status').textContent = "Tracking started...";
+      requestSensorAccess();
+    });
+
+    function requestSensorAccess() {
+      if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        DeviceMotionEvent.requestPermission().then(response => {
+          if (response === 'granted') {
+            window.addEventListener('devicemotion', handleMotion);
+          } else {
+            alert("Permission denied for motion sensors.");
+          }
+        }).catch(() => {
+          alert("Sensor access failed.");
+        });
+      } else {
+        window.addEventListener('devicemotion', handleMotion);
+      }
+    }
+
+    function handleMotion(event) {
+      const gamma = event.rotationRate.gamma;
+      if (gamma === null) return;
+
+      const threshold = parseFloat(document.getElementById('ratchetThreshold').value) || 3;
+
+      if (lastRawAngle === null) {
+        lastRawAngle = gamma;
+        return;
+      }
+
+      const isForward = direction === 'clockwise' ? gamma > 0 : gamma < 0;
+      const isReverse = direction === 'clockwise' ? gamma < -threshold : gamma > threshold;
+
+      if (isForward) {
+        currentAngle += Math.abs(gamma) * 0.02;
+      }
+
+      if (isReverse) {
+        ratchetBase = currentAngle;
+        document.getElementById('status').textContent = `🔁 Ratchet locked at ${ratchetBase.toFixed(1)}°`;
+      }
+
+      const displayAngle = currentAngle - ratchetBase;
+
+      document.getElementById('needle').style.transform = `rotate(${displayAngle}deg)`;
+
+      if (displayAngle >= targetAngle) {
+        document.getElementById('status').textContent = `✅ Target reached: ${displayAngle.toFixed(1)}°`;
+      } else {
+        document.getElementById('status').textContent = `🔄 Current angle: ${displayAngle.toFixed(1)}°`;
+      }
+
       lastRawAngle = gamma;
-      return;
     }
-
-    // Clockwise rotation adds to angle
-    if (gamma > 0) {
-      currentAngle += gamma * 0.02;
-    }
-
-    // Anti-clockwise movement beyond threshold → lock in new base
-    if (gamma < -ratchetThreshold) {
-      ratchetBase = currentAngle;
-      document.getElementById('status').textContent = `🔁 Ratchet locked at ${ratchetBase.toFixed(1)}°`;
-    }
-
-    // Continue counting from ratchet base
-    const displayAngle = currentAngle - ratchetBase;
-
-    document.getElementById('needle').style.transform = `rotate(${displayAngle}deg)`;
-
-    if (displayAngle >= targetAngle) {
-      document.getElementById('status').textContent = `✅ Target reached: ${displayAngle.toFixed(1)}°`;
-    } else {
-      document.getElementById('status').textContent = `🔄 Current angle: ${displayAngle.toFixed(1)}°`;
-    }
-
-    lastRawAngle = gamma;
-  }
-</script>
+  </script>
+</body>
+</html>
