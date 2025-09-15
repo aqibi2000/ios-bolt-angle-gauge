@@ -79,7 +79,7 @@
   </style>
 </head>
 <body>
-  <div id="timestamp">Created: Monday, 15 September 2025, 21:32 BST</div>
+  <div id="timestamp">Created: Monday, 15 September 2025, 21:35 BST</div>
   <h1>🔧 iOS Bolt Angle Gauge</h1>
 
   <label for="targetAngle">Target angle (°):</label>
@@ -160,7 +160,7 @@
       const isForward = gamma < 0;
       const isReverse = gamma > 0;
 
-      if (isForward && !paused) {
+      if (isForward) {
         currentAngle += Math.abs(gamma) * 0.02;
       }
 
@@ -169,10 +169,11 @@
           paused = true;
           pausedAngle = currentAngle;
         }
-
         if (isForward && paused) {
           paused = false;
         }
+      } else {
+        paused = false;
       }
 
       if (!paused) {
