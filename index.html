@@ -79,7 +79,7 @@
   </style>
 </head>
 <body>
-  <div id="timestamp">Created: Monday, 15 September 2025, 21:35 BST</div>
+  <div id="timestamp">Created: Monday, 15 September 2025, 21:37 BST</div>
   <h1>🔧 iOS Bolt Angle Gauge</h1>
 
   <label for="targetAngle">Target angle (°):</label>
@@ -103,7 +103,6 @@
     let currentAngle = 0;
     let lastRawAngle = null;
     let paused = false;
-    let pausedAngle = 0;
     let targetMark = null;
 
     // Add gauge markings every 30°
@@ -119,13 +118,10 @@
       currentAngle = 0;
       lastRawAngle = null;
       paused = false;
-      pausedAngle = 0;
       document.getElementById('status').textContent = "Tracking started...";
 
-      // Remove old target mark
       if (targetMark) targetMark.remove();
 
-      // Add new target mark
       targetMark = document.createElement('div');
       targetMark.className = 'target-mark';
       targetMark.style.transform = `rotate(${targetAngle}deg) translateY(-90px)`;
@@ -167,7 +163,6 @@
       if (ratchetEnabled) {
         if (isReverse && Math.abs(gamma) > threshold) {
           paused = true;
-          pausedAngle = currentAngle;
         }
         if (isForward && paused) {
           paused = false;
@@ -176,12 +171,10 @@
         paused = false;
       }
 
-      if (!paused) {
-        document.getElementById('needle').style.transform = `rotate(${currentAngle}deg)`;
-      }
+      document.getElementById('needle').style.transform = `rotate(${currentAngle}deg)`;
 
-      const statusText = paused
-        ? `⏸ Paused at: ${pausedAngle.toFixed(1)}°\n🎯 Target angle: ${targetAngle.toFixed(1)}°`
+      const statusText = paused && ratchetEnabled
+        ? `⏸ Paused at: ${currentAngle.toFixed(1)}°\n🎯 Target angle: ${targetAngle.toFixed(1)}°`
         : currentAngle >= targetAngle
           ? `✅ Target reached: ${currentAngle.toFixed(1)}°\n🎯 Target angle: ${targetAngle.toFixed(1)}°`
           : `🔄 Current angle: ${currentAngle.toFixed(1)}°\n🎯 Target angle: ${targetAngle.toFixed(1)}°`;
