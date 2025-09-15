@@ -79,7 +79,7 @@
   </style>
 </head>
 <body>
-  <div id="timestamp">Created: Monday, 15 September 2025, 22:35 BST</div>
+  <div id="timestamp">Created: Monday, 15 September 2025, 22:40 BST</div>
   <h1>🔧 iOS Bolt Angle Gauge</h1>
 
   <label for="targetAngle">Target angle (°):</label>
@@ -112,9 +112,11 @@
     }
 
     document.getElementById('startBtn').addEventListener('click', () => {
+      // Reset everything
       targetAngle = parseFloat(document.getElementById('targetAngle').value);
       currentAngle = 0;
       paused = false;
+      document.getElementById('needle').style.transform = `rotate(0deg)`;
       document.getElementById('status').textContent = "Requesting motion permission...";
 
       if (targetMark) targetMark.remove();
