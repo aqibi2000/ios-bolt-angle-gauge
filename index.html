@@ -79,7 +79,7 @@
   </style>
 </head>
 <body>
-  <div id="timestamp">Created: Monday, 15 September 2025, 21:55 BST</div>
+  <div id="timestamp">Created: Monday, 15 September 2025, 22:25 BST</div>
   <h1>🔧 iOS Bolt Angle Gauge</h1>
 
   <label for="targetAngle">Target angle (°):</label>
@@ -143,7 +143,6 @@
             document.getElementById('status').textContent = "❌ Motion permission request failed.";
           });
       } else {
-        // Non-iOS fallback
         document.getElementById('status').textContent = "Tracking started...";
         window.addEventListener('devicemotion', handleMotion);
       }
@@ -160,17 +159,17 @@
       const ratchetEnabled = document.getElementById('ratchetToggle').checked;
 
       if (ratchetEnabled) {
-        if (gamma < 0 && !paused) {
+        if (gamma > 0) {
+          paused = true; // pause immediately on clockwise
+        }
+        if (gamma < 0 && Math.abs(gamma) > threshold) {
+          paused = false; // resume only if anticlockwise exceeds threshold
+        }
+        if (!paused) {
           currentAngle += Math.abs(gamma) * 0.02;
         }
-        if (gamma > 0 && Math.abs(gamma) > threshold) {
-          paused = true;
-        }
-        if (gamma < 0 && paused) {
-          paused = false;
-        }
       } else {
-        // Anticlockwise adds, clockwise subtracts
+        // Ratchet disabled: anticlockwise adds, clockwise subtracts
         currentAngle += gamma < 0 ? Math.abs(gamma) * 0.02 : -Math.abs(gamma) * 0.02;
         paused = false;
       }
