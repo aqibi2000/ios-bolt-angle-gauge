@@ -4,14 +4,117 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>iOS Bolt Angle Gauge</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="manifest" href="manifest.json" />
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 2em;
+      background: #f4f4f4;
+    }
+    input, button {
+      font-size: 1.2em;
+      margin: 1em;
+      padding: 0.5em;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    #status {
+      font-size: 1.2em;
+      margin-top: 1em;
+    }
+    #gauge {
+      margin: 2em auto;
+      width: 200px;
+      height: 200px;
+      border: 10px solid #ccc;
+      border-radius: 50%;
+      position: relative;
+    }
+    #needle {
+      width: 4px;
+      height: 90px;
+      background: red;
+      position: absolute;
+      top: 10px;
+      left: 98px;
+      transform-origin: bottom center;
+      transform: rotate(0deg);
+    }
+    #arrow {
+      font-size: 2em;
+      margin-top: 1em;
+    }
+  </style>
 </head>
 <body>
   <h1>🔧 iOS Bolt Angle Gauge</h1>
   <input type="number" id="targetAngle" placeholder="Enter required angle (°)" />
   <button id="startBtn">Start</button>
   <p id="status">Waiting to start...</p>
-  <script src="script.js"></script>
+  <div id="gauge">
+    <div id="needle"></div>
+  </div>
+  <div id="arrow">↔️</div>
+
+  <script>
+    let targetAngle = 0;
+    let referenceAngle = null;
+    let currentAngle = 0;
+    let lastAngle = null;
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      targetAngle = parseFloat(document.getElementById('targetAngle').value);
+      referenceAngle = null;
+      document.getElementById('status').textContent = "Tracking started...";
+      requestSensorAccess();
+    });
+
+    function requestSensorAccess() {
+      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(response => {
+          if (response === 'granted') {
+            window.addEventListener('deviceorientation', handleOrientation);
+          } else {
+            document.getElementById('status').textContent = "Permission denied.";
+          }
+        }).catch(() => {
+          document.getElementById('status').textContent = "Sensor access failed.";
+        });
+      } else {
+        window.addEventListener('deviceorientation', handleOrientation);
+      }
+    }
+
+    function handleOrientation(event) {
+      const alpha = event.alpha;
+      if (referenceAngle === null) referenceAngle = alpha;
+
+      let delta = alpha - referenceAngle;
+      if (delta < 0) delta += 360;
+
+      currentAngle = delta;
+
+      // Update needle
+      document.getElementById('needle').style.transform = `rotate(${currentAngle}deg)`;
+
+      // Update direction arrow
+      if (lastAngle !== null) {
+        const direction = currentAngle > lastAngle ? '↻' : currentAngle < lastAngle ? '↺' : '↔️';
+        document.getElementById('arrow').textContent = direction;
+      }
+      lastAngle = currentAngle;
+
+      // Update status
+      if (currentAngle >= targetAngle) {
+        document.getElementById('status').textContent = `✅ Target reached: ${currentAngle.toFixed(1)}°`;
+      } else {
+        document.getElementById('status').textContent = `🔄 Current angle: ${currentAngle.toFixed(1)}°`;
+      }
+    }
+  </script>
 </body>
 </html>
