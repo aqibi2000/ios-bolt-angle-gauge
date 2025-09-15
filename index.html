@@ -10,7 +10,6 @@
       text-align: center;
       padding: 2em;
       background: #f4f4f4;
-      position: relative;
     }
     label {
       display: block;
@@ -79,7 +78,7 @@
   </style>
 </head>
 <body>
-  <div id="timestamp">Created: Monday, 15 September 2025, 22:45 BST</div>
+  <div id="timestamp">Created: Monday, 15 September 2025, 22:55 BST</div>
   <h1>🔧 iOS Bolt Angle Gauge</h1>
 
   <label for="targetAngle">Target angle (°):</label>
@@ -103,6 +102,7 @@
     let currentAngle = 0;
     let paused = false;
     let targetMark = null;
+    let orientation = { alpha: 0, beta: 0, gamma: 0 };
 
     for (let i = 0; i < 360; i += 30) {
       const mark = document.createElement('div');
@@ -110,6 +110,12 @@
       mark.style.transform = `rotate(${i}deg) translateY(-90px)`;
       document.getElementById('gauge').appendChild(mark);
     }
+
+    window.addEventListener('deviceorientation', (e) => {
+      orientation.alpha = e.alpha || 0;
+      orientation.beta = e.beta || 0;
+      orientation.gamma = e.gamma || 0;
+    });
 
     document.getElementById('startBtn').addEventListener('click', () => {
       targetAngle = parseFloat(document.getElementById('targetAngle').value);
@@ -150,29 +156,35 @@
     }
 
     function handleMotion(event) {
-      const alpha = event.rotationRate?.alpha || 0;
-      const beta = event.rotationRate?.beta || 0;
-      const gamma = event.rotationRate?.gamma || 0;
-      const deltaTime = event.interval || 0.02;
+      const { alpha: rAlpha = 0, beta: rBeta = 0, gamma: rGamma = 0 } = event.rotationRate || {};
+      const dt = event.interval || 0.02;
 
-      const netRotation = alpha + beta + gamma;
+      // Orientation compensation (simplified projection onto Z-axis)
+      const pitch = orientation.beta * Math.PI / 180;
+      const roll = orientation.gamma * Math.PI / 180;
+
+      // Project rotationRate into world Z-axis
+      const compensatedZ = rAlpha * Math.cos(pitch) * Math.cos(roll)
+                         + rBeta * Math.sin(roll)
+                         - rGamma * Math.sin(pitch);
+
       const threshold = parseFloat(document.getElementById('ratchetThreshold').value) || 3;
       const ratchetEnabled = document.getElementById('ratchetToggle').checked;
 
       if (ratchetEnabled) {
-        if (netRotation > 0) {
+        if (compensatedZ > 0) {
           paused = true;
         }
-        if (netRotation < 0 && Math.abs(netRotation) > threshold) {
+        if (compensatedZ < 0 && Math.abs(compensatedZ) > threshold) {
           paused = false;
         }
         if (!paused) {
-          currentAngle += Math.abs(netRotation) * deltaTime;
+          currentAngle += Math.abs(compensatedZ) * dt;
         }
       } else {
-        currentAngle += netRotation < 0
-          ? Math.abs(netRotation) * deltaTime
-          : -Math.abs(netRotation) * deltaTime;
+        currentAngle += compensatedZ < 0
+          ? Math.abs(compensatedZ) * dt
+          : -Math.abs(compensatedZ) * dt;
         paused = false;
       }
 
