@@ -54,7 +54,7 @@
   </style>
 </head>
 <body>
-  <div id="timestamp">Created: Monday, 15 September 2025, 21:15 BST</div>
+  <div id="timestamp">Created: Monday, 15 September 2025, 21:20 BST</div>
   <h1>🔧 iOS Bolt Angle Gauge</h1>
   <input type="number" id="targetAngle" placeholder="Enter required angle (°)" />
   <input type="number" id="ratchetThreshold" placeholder="Ratchet threshold (°)" value="3" />
@@ -69,8 +69,8 @@
     let targetAngle = 0;
     let currentAngle = 0;
     let lastRawAngle = null;
-    let ratchetBase = 0;
     let direction = 'clockwise';
+    let paused = false;
 
     document.getElementById('toggleDirection').addEventListener('click', () => {
       direction = direction === 'clockwise' ? 'anticlockwise' : 'clockwise';
@@ -81,7 +81,7 @@
       targetAngle = parseFloat(document.getElementById('targetAngle').value);
       currentAngle = 0;
       lastRawAngle = null;
-      ratchetBase = 0;
+      paused = false;
       document.getElementById('status').textContent = "Tracking started...";
       requestSensorAccess();
     });
@@ -108,31 +108,31 @@
 
       const threshold = parseFloat(document.getElementById('ratchetThreshold').value) || 3;
 
-      if (lastRawAngle === null) {
-        lastRawAngle = gamma;
-        return;
-      }
-
       const isForward = direction === 'clockwise' ? gamma > 0 : gamma < 0;
-      const isReverse = direction === 'clockwise' ? gamma < -threshold : gamma > threshold;
+      const isReverse = direction === 'clockwise' ? gamma < 0 : gamma > 0;
 
-      if (isForward) {
+      if (isForward && !paused) {
         currentAngle += Math.abs(gamma) * 0.02;
       }
 
-      if (isReverse) {
-        ratchetBase = currentAngle;
-        document.getElementById('status').textContent = `🔁 Ratchet locked at ${ratchetBase.toFixed(1)}°`;
+      if (isReverse && Math.abs(gamma) > threshold) {
+        paused = true;
+        document.getElementById('status').textContent = `⏸ Paused due to reverse swing (${Math.abs(gamma).toFixed(1)}°)`;
       }
 
-      const displayAngle = currentAngle - ratchetBase;
+      if (isForward && paused) {
+        paused = false;
+        document.getElementById('status').textContent = `▶️ Resumed tracking`;
+      }
 
-      document.getElementById('needle').style.transform = `rotate(${displayAngle}deg)`;
+      if (!paused) {
+        document.getElementById('needle').style.transform = `rotate(${currentAngle}deg)`;
 
-      if (displayAngle >= targetAngle) {
-        document.getElementById('status').textContent = `✅ Target reached: ${displayAngle.toFixed(1)}°`;
-      } else {
-        document.getElementById('status').textContent = `🔄 Current angle: ${displayAngle.toFixed(1)}°`;
+        if (currentAngle >= targetAngle) {
+          document.getElementById('status').textContent = `✅ Target reached: ${currentAngle.toFixed(1)}°`;
+        } else {
+          document.getElementById('status').textContent = `🔄 Current angle: ${currentAngle.toFixed(1)}°`;
+        }
       }
 
       lastRawAngle = gamma;
